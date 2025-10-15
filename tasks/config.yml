@@ -5,6 +5,12 @@
 # Use UID/GID as filesystems may be remote. Permissions are determined from Mox
 # install - Mox will set correct permissions on startup.
 #
+# Decision: Use service user for SUID/SGID perms - SUID/SGID bits cannot be set
+#     by a standard user for 'root' - this will result in errors during role
+#     application. Mox will correct permissions on first run. This will lead
+#     differential in testing between what is set in the role with user data
+#     enabled, and testing resultant permissions.
+#
 # Mox service starts as root and drops privileges once network sockets are
 # opened.
 #
@@ -15,7 +21,7 @@
   ansible.builtin.file:
     path: '{{ item }}'
     owner: '{{ _mox_srv_user._uid }}'
-    group: '{{ _mox_srv_group._gid }}'
+    group: '{{ _mox_srv_group._gid }}'  # SUID/SGID Decision.
     mode: '2750'
     state: 'directory'
   loop:
@@ -33,7 +39,7 @@
   ansible.builtin.file:
     path: '{{ item }}'
     owner: '{{ _mox_srv_user._uid }}'
-    group: '{{ _mox_srv_group._gid }}'
+    group: '{{ _mox_srv_group._gid }}'  # SUID/SGID Decision.
     mode: '0750'
     state: 'directory'
   loop:
@@ -85,8 +91,6 @@
           wants:
             - 'network-online.target'
         service:
-          u_mask: '007'
-          limit_nofile: 65536
           type: 'simple'
           exec_start:
             - '{{ _mox_srv_storage_dir._bin ~ " serve" }}'
@@ -94,9 +98,12 @@
             - '{{ _mox_srv_storage_dir._bin ~ " stop" }}'
           restart_sec: '5s'
           restart: 'always'
-          syslog_facility: 'mail'
-
         exec:
+          u_mask: '007'
+          limit_nofile:
+            soft: 65535
+            hard: 65535
+          syslog_facility: 'mail'
           working_directory: '{{ _mox_srv_storage_dir.raw }}'
           private_devices: true
           private_tmp: true
@@ -105,10 +112,10 @@
             - '{{ _mox_srv_storage_dir._config }}'
             - '{{ _mox_srv_storage_dir._data }}'
           protect_kernel_tunables: true
-          protext_control_groups: true
-          ambient_capabilities:  # AmbientCapabilities=
+          protect_control_groups: true
+          ambient_capabilities_include:
             - ''
-          capability_bounding_set:
+          capability_bounding_set_include:
             - 'CAP_SETUID'
             - 'CAP_SETGID'
             - 'CAP_NET_BIND_SERVICE'
@@ -119,13 +126,13 @@
             - 'CAP_FOWNER'
             - 'CAP_KILL'
           no_new_privileges: true
-          restrict_address_families:
+          restrict_address_families_allow:
             - 'AF_INET'
             - 'AF_INET6'
             - 'AF_UNIX'
             - 'AF_NETLINK'
           protect_proc: 'invisible'
-          restrict_namespaces: true
+          restrict_namespaces_allow: true  # Denies. Bad systemd naming.
           restrict_realtime: true
           remove_ipc: true
           protect_hostname: true
@@ -134,10 +141,12 @@
           protect_kernel_modules: true
           memory_deny_write_execute: true
           lock_personality: true
-          device_policy: 'closed'
           system_call_architectures:
             - 'native'
-          system_call_filter: '@system-service'
+          system_call_filter_allow:
+            - '@system-service'
+        resource_control:
+          device_policy: 'closed'
         install:
           wanted_by:
             - 'multi-user.target'

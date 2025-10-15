@@ -4,14 +4,12 @@
 ###############################################################################
 # Default configuration is deployed successfully.
 #
-# TODO - update all of this.ex
 # Tests:
-# * paperless.conf set.
-# * Paperless-NGX services are active and running.
-# * Granian overrides are set correctly.
-# * ImageMaick has PDF processing enabled.
-# * install directory locations are removed.
-# * sqlite database exists in data directory.
+# * Binary deployed correctly.
+# * Mox service active and running for 'default' instance.
+# * Permissions propagated correctly for user data mounts.
+# * Permissions propagated correctly for root mounts.
+# * Mox service NOT active/running for 'no_config' instance.
 
 dependency:
   name: 'galaxy'
@@ -31,6 +29,7 @@ provisioner:
         mox_srv_import_config: '{{
             lookup("env", "MOLECULE_SCENARIO_DIRECTORY") ~ "/files/config"
           }}'
+        mox_srv_user_data_manage_enable: false
 platforms:
   - name: 'mox-debian-13-default'
     image: 'ghcr.io/hifis-net/debian-systemd:13'

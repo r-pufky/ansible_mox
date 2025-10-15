@@ -1,4 +1,15 @@
 ---
+###############################################################################
+# Verify
+###############################################################################
+# Decision: Use service user for SUID/SGID perms - SUID/SGID bits cannot be set
+#     by a standard user for 'root' - this will result in errors during role
+#     application. Mox will correct permissions on first run. This will lead
+#     differential in testing between what is set in the role with user data
+#     enabled, and testing resultant permissions.
+#
+# See config.yml.
+
 - name: 'Verify'
   hosts: 'all'
   gather_facts: false
@@ -16,22 +27,6 @@
         test_state: 'file'
         test_diff: true
 
-    - name: 'Verify | /data/mox'
-      ansible.builtin.include_role:
-        name: 'r_pufky.lib.tests'
-        tasks_from: 'file.yml'
-      vars:
-        test_name: 'Verify | /data/mox/{{ item }}'
-        test_file: '/data/mox/{{ item }}'
-        test_owner: 'mox'
-        test_group: '{{ omit }}'  # Mox will adjust permissions as needed.
-        test_mode: '{{ omit }}'  # Mox will adjust permissions as needed.
-        test_state: 'directory'
-        test_diff: true
-      loop:
-        - 'data'
-        - 'config'
-
     - name: 'Verify | /data/mox/web'
       ansible.builtin.include_role:
         name: 'r_pufky.lib.tests'
@@ -44,3 +39,43 @@
         test_mode: '0750'
         test_state: 'directory'
         test_diff: true
+
+- name: 'Verify'
+  hosts: 'mox-debian-13-default'
+  gather_facts: false
+  tasks:
+    - name: 'Verify | /data/mox'
+      ansible.builtin.include_role:
+        name: 'r_pufky.lib.tests'
+        tasks_from: 'file.yml'
+      vars:
+        test_name: 'Verify | /data/mox/{{ item }}'
+        test_file: '/data/mox/{{ item }}'
+        test_owner: 'mox'
+        test_group: 'root'
+        test_mode: '2750'
+        test_state: 'directory'
+        test_diff: true
+      loop:
+        - 'data'
+        - 'config'
+
+- name: 'Verify'
+  hosts: 'mox-debian-13-no_config'
+  gather_facts: false
+  tasks:
+    - name: 'Verify | /data/mox'
+      ansible.builtin.include_role:
+        name: 'r_pufky.lib.tests'
+        tasks_from: 'file.yml'
+      vars:
+        test_name: 'Verify | /data/mox/{{ item }}'
+        test_file: '/data/mox/{{ item }}'
+        test_owner: 'mox'
+        test_group: 'mox'
+        test_mode: '0750'
+        test_state: 'directory'
+        test_diff: true
+      loop:
+        - 'data'
+        - 'config'

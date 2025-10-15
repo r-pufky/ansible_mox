@@ -1,8 +1,8 @@
 ---
 ###############################################################################
-# Default Paperless-NGX Package Dependencies
+# Default Mox Package Dependencies
 ###############################################################################
-# Default required packages for Paperless-NGX install.
+# Default required packages for Mox install.
 #
 # Updates:
 # * New MAJOR, MINOR releases should hard branch at version before starting
@@ -15,13 +15,13 @@
 #   * Use defaults/ to remove any changed/deprecated variables.
 # * Update tests for any changes.
 # * Standard role validation testing (yamllint, ansible-lint, todo, noqa).
-# * Tag with MAJOR.MINOR version, with PATCH representing role change.
+# * Tag with OS-APP-ROLE version.
 #
 # Reference:
-# * https://docs.paperless-ngx.com/setup/#bare_metal
-# * https://github.com/paperless-ngx/paperless-ngx/blob/dev/Dockerfile
+# * https://www.xmox.nl
+# * github.com/mjl-/mox
 
-# Last time Paperless-NGS options were validated against default configuration.
+# Last time Mox options were validated against default configuration.
 mox_role_validate_date: '2025-09-08'
 mox_role_validate_release: 'trixie'
 mox_role_validate_version: 'v0.0.15'
@@ -38,7 +38,7 @@ mox_role_packages:
   - 'rsync'  # ansible.posix.synchronize (config directory).
 
 ###############################################################################
-# Default Paperless-NGX  User/Group
+# Default Mox User/Group
 ###############################################################################
 
 mox_role_group:
