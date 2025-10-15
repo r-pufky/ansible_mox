@@ -1,0 +1,53 @@
+---
+###############################################################################
+# Install Packages & Services
+###############################################################################
+# Install packages and compile Mox.
+#
+# Reference:
+# * https://www.xmox.nl/install/
+
+- name: 'Install | packages'
+  ansible.builtin.include_role:
+    name: 'r_pufky.deb.apt'
+  vars:
+    apt_packages:
+      - '{{ mox_role_packages }}'
+    apt_package_update_cache: true
+
+- name: 'Install | query binary'
+  ansible.builtin.stat:
+    path: '{{ _mox_srv_storage_dir._bin_src }}'
+  register: _mox_install
+
+- name: 'Install | build 🗘'
+  when: not _mox_install.stat.exists
+  ansible.builtin.debug:
+    msg: |
+      ╭───────────────────────────────────────────────────────────────────╮
+      │                                                                   │
+      │      Building Mox from source. This will take a few minutes.      │
+      │                                                                   │
+      ╰───────────────────────────────────────────────────────────────────╯
+
+- name: 'Install | build mox {{ _mox_srv_version.raw }}'
+  when: not _mox_install.stat.exists
+  ansible.builtin.shell: >-
+    GOBIN='{{ _mox_srv_storage_dir._bin_src | dirname }}'
+    CGO_ENABLED=0
+    go install github.com/mjl-/mox@{{ _mox_srv_version.raw }}
+  args:
+    executable: '/bin/bash'
+    chdir: '/tmp'
+  changed_when: _mox_build.rc == 0
+  register: _mox_build
+
+- name: 'Install | link binary'
+  when: not _mox_install.stat.exists
+  ansible.builtin.file:
+    path: '{{ _mox_srv_storage_dir._bin }}'
+    src: '{{ _mox_srv_storage_dir._bin_src }}'
+    owner: 'root'
+    group: 'root'
+    mode: '0755'
+    state: 'hard'

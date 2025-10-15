@@ -1,0 +1,69 @@
+---
+###############################################################################
+# Prep
+###############################################################################
+# Create user if needed and determine UID/GID for potential remote filesystems.
+#
+# Special Case:
+# * mox.conf (static) changes MUST restart mox service to apply changes.
+# * domains.conf (dynamic) automatically reloaded on file change - errors abort
+#   reload and previous version remains active.
+#
+# Reference:
+# * https://www.xmox.nl/config/
+
+- name: 'Prep | fatal version mis-match'
+  when: >
+    _mox_srv_version_fatal_enable.raw and
+    _mox_srv_version.raw != mox_role_validate_version
+  ansible.builtin.fail:
+    msg: |
+      ╭───────────────────────────────────────────────────────────────────╮
+      │                                                                   │
+      │                     Fatal version mis-match.                      │
+      │                                                                   │
+      ├───────────────────────────────────────────────────────────────────╯
+      │ Mox version changes typically require manual migration steps listed
+      │ in release notes.
+      │
+      │ Reference:
+      │ * https://github.com/mjl-/mox/releases/tag/{{ _mox_srv_version.raw }}
+      │
+      │ mox_srv_version: {{ _mox_srv_version.raw }}
+      │ Supported version: {{ mox_role_validate_version }}
+      │ mox_srv_version_fatal_enable: {{ _mox_srv_version_fatal_enable.raw }}
+
+- name: 'Prep | manage users'
+  when: _mox_srv_create_user.raw
+  ansible.builtin.include_role:
+    name: 'r_pufky.deb.users'
+    tasks_from: 'role_account_add.yml'
+  vars:
+    users_role_user: '{{ mox_role_user }}'
+    users_role_group: '{{ mox_role_group }}'
+
+- name: 'Prep | enumerate system user {{ _mox_srv_user.raw }}'
+  ansible.builtin.user:
+    name: '{{ _mox_srv_user.raw }}'
+  check_mode: true
+  changed_when: false
+  register: _mox_srv_user_query
+
+- name: 'Prep | parse system user UID/GID'
+  ansible.builtin.set_fact:
+    _mox_srv_user: '{{
+        _mox_srv_user |
+        combine({"_uid": _mox_srv_user_query.uid})
+      }}'
+    _mox_srv_group: '{{
+        _mox_srv_group |
+        combine({"_gid": _mox_srv_user_query.group})
+      }}'
+
+- name: 'Prep | manage bin directory'
+  ansible.builtin.file:
+    path: '{{ _mox_srv_storage_dir._bin_src | dirname }}'
+    owner: 'root'
+    group: 'root'
+    mode: '0755'
+    state: 'directory'

@@ -1,0 +1,107 @@
+---
+###############################################################################
+# Mox Service Configuration
+###############################################################################
+# Requires ~512MB RAM, ~15% metadata email overhead.
+#
+# Install size: ~150GB
+#   golang: ~112MB.
+#      mox: ~38MB.
+
+# Mox Release.
+#
+# Versions (Schematic):
+#       MAJOR: Safe - Usually requires no role updates.
+#       MINOR: Safe - Usually requires no role updates.
+#       PATCH: Safe - Usually requires no role updates.
+#   RECOMMEND: Always check release notes when upgrading versions - most
+#              version changes require manual migration of data store. Never
+#              use 'latest'.
+#
+# Values:
+#   {VERSION}: Tagged release to use ('v0.0.15').
+#      latest: Use latest stable release.
+#
+# Default: 'v0.0.15'.
+#
+# Reference:
+# * https://github.com/mjl-/mox/releases
+mox_srv_version: 'v0.0.15'
+
+# Halt role if specified version != role version?
+#
+# Mox upgrades generally require manual upgrade steps listed in release notes.
+#
+# Default: True.
+#
+# Reference:
+# * https://github.com/mjl-/mox/releases
+mox_srv_version_fatal_enable: true
+
+# Directly import all configuration from ansible controller?
+#
+# Special Case:
+#       '': Mox service installed but not started as additional manual config
+#           required: 'su - mox -s /bin/bash'.
+#   {PATH}: Mox service installed and restarted.
+#
+# Sourced from ansible controller; automatically placed in
+# mox_srv_storage_dir/config with correct permissions.
+#
+# mox_srv_import_config: 'host_vars/mox.example.com/data/config'
+#
+# Default: '' (disabled).
+mox_srv_import_config: ''
+
+###############################################################################
+# Mox User
+###############################################################################
+
+# User that Mox will run under.
+#
+# Enable mox_srv_create_user if account is not externally managed. Manage
+# running server with 'su - mox -s /bin/bash'.
+#
+# Default: 'mox'.
+mox_srv_user: 'mox'
+
+# Group that Mox will run under.
+#
+# Enable mox_srv_create_user if group is not externally managed.
+#
+# Default: 'mox'.
+mox_srv_group: 'mox'
+
+# Create mox_srv_user, mox_srv_group if not detected?
+#
+# Applied via r_pufky.deb.users, see vars/main.yml for default user attributes.
+#
+# Default: True.
+mox_srv_create_user: true
+
+###############################################################################
+# Media Permissions
+###############################################################################
+
+# Storage root location.
+#
+# Special Case:
+#     {PATH}/mail: Mail storage location.
+#   {PATH}/config: Mail config location.
+#      {PATH}/web: Mail web location (for ACME certificates).
+#
+# Default: '/data/mox'.
+mox_srv_storage_dir: '/data/mox'
+
+# Enable user management of data/media files?
+#
+# Use mox_srv_user to execute data/media management commands. Role applies
+# media permissions using 'root' by default. For mounted data locations (NFS
+# with squashed mounts, mapped container mounts, etc) the local root user will
+# not have sufficient privileges to modify these files.
+#
+# Applies to:
+# * mox_srv_storage_dir
+#
+# Default: True.
+mox_srv_user_data_manage_enable: true

@@ -1,0 +1,12 @@
+---
+- name: 'Prepare'
+  hosts: 'all'
+  gather_facts: false
+  tasks:
+    - name: 'Prepare | simulate user media restriction'
+      ansible.builtin.file:
+        path: '/data'
+        owner: 550
+        group: 550
+        mode: '0755'
+        state: 'directory'

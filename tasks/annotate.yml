@@ -1,0 +1,80 @@
+---
+# yamllint disable rule:line-length
+###############################################################################
+# Annotate User Configuration.
+###############################################################################
+# Use r_pufky.data.v3 data annotations to enforce consistency and validation
+# checks.
+#
+# Reference:
+# * https://docs.ansible.com/ansible/latest/dev_guide/developing_program_flow_modules.html#argument-spec
+# * https://github.com/ansible/ansible/issues/77159
+# yamllint enable rule:line-length
+
+- name: 'Annotate | sanitize & annotate service defaults'
+  ansible.builtin.set_fact:  # noqa jinja[spacing] readability.
+    _mox_srv_version: "{{ {} | r_pufky.data.v3(
+        raw=mox_srv_version,
+        default=mox_role_validate_version,
+        hint='str',
+        order=1
+        )
+      }}"
+    _mox_srv_version_fatal_enable: "{{ {} | r_pufky.data.v3(
+        raw=mox_srv_version_fatal_enable,
+        default=true,
+        hint='bool',
+        order=2
+        )
+      }}"
+    _mox_srv_import_config: "{{ {} | r_pufky.data.v3(
+        raw=mox_srv_import_config,
+        default='',
+        _src=mox_srv_import_config | regex_replace('\\/$', '') ~ '/',
+        hint='str',
+        comment='Dest is _mox_srv_storage_dir._config',
+        order=3
+        )
+      }}"
+    _mox_srv_user: "{{ {} | r_pufky.data.v3(
+        raw=mox_srv_user,
+        default='mox',
+        _uid='',
+        hint='str',
+        order=4
+        )
+      }}"
+    _mox_srv_group: "{{ {} | r_pufky.data.v3(
+        raw=mox_srv_group,
+        default='mox',
+        _gid='',
+        hint='str',
+        order=5
+        )
+      }}"
+    _mox_srv_create_user: "{{ {} | r_pufky.data.v3(
+        raw=mox_srv_create_user,
+        default=true,
+        hint='bool',
+        order=6
+        )
+      }}"
+    _mox_srv_storage_dir: "{{ {} | r_pufky.data.v3(
+        raw=mox_srv_storage_dir | regex_replace('\\/$', ''),
+        default='/data/mox',
+        _data=mox_srv_storage_dir | regex_replace('\\/$', '') ~ '/data',
+        _config=mox_srv_storage_dir | regex_replace('\\/$', '') ~ '/config',
+        _web=mox_srv_storage_dir | regex_replace('\\/$', '') ~ '/web',
+        _bin='/usr/local/bin/mox',
+        _bin_src=mox_role_dir ~ '/' ~ mox_srv_version ~ '/mox',
+        hint='str',
+        order=7
+        )
+      }}"
+    _mox_srv_user_data_manage_enable: "{{ {} | r_pufky.data.v3(
+        raw=mox_srv_user_data_manage_enable,
+        default=true,
+        hint='bool',
+        order=8
+        )
+      }}"

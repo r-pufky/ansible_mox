@@ -1,0 +1,51 @@
+---
+###############################################################################
+# Validate
+###############################################################################
+# Start Mox services if configuration deployed and confirm active and running.
+
+- name: 'Validate | start services'
+  when: _mox_srv_import_config.raw | length > 0
+  ansible.builtin.systemd:
+    name: '{{ item }}'
+    enabled: true
+    daemon_reload: true
+    state: 'restarted'
+  failed_when: false
+  loop:
+    - 'mox.service'
+
+- name: 'Validate | query service status'
+  when: _mox_srv_import_config.raw | length > 0
+  ansible.builtin.service_facts:
+
+- name: 'Validate | assert services running'
+  when: _mox_srv_import_config.raw | length > 0
+  ansible.builtin.assert:
+    quiet: true
+    that: ansible_facts.services[item].state == 'running'
+    fail_msg: |
+      ╭───────────────────────────────────────────────────────────────────╮
+      │                                                                   │
+      │                     Service failed to start.                      │
+      │                                                                   │
+      ├───────────────────────────────────────────────────────────────────╯
+      │ {{ item }}
+  loop:
+    - 'mox.service'
+
+- name: 'Validate | MANUAL CONFIGURATION REQUIRED ⚠'
+  when: _mox_srv_import_config.raw | length == 0
+  ansible.builtin.debug:
+    msg: |
+      ╭───────────────────────────────────────────────────────────────────╮
+      │                                                                   │
+      │                    Mox configuration required.                    │
+      │                                                                   │
+      ├───────────────────────────────────────────────────────────────────╯
+      │ Mox installed without configuration. Manual setup required.
+      │
+      │ Configure:
+      │   su - {{ _mox_srv_user.raw }} -s /bin/bash
+      │   cd {{ _mox_srv_storage_dir.raw }}
+      │   mox --help

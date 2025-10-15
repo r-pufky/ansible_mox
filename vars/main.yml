@@ -1,0 +1,60 @@
+---
+###############################################################################
+# Default Paperless-NGX Package Dependencies
+###############################################################################
+# Default required packages for Paperless-NGX install.
+#
+# Updates:
+# * New MAJOR, MINOR releases should hard branch at version before starting
+#   (e.g. 2.14.x branch).
+# * Keep a separate change log as changes are made, you will not remember all
+#   of them.
+# * Use bare-metal docs to validate package/process changes.
+# * Update role defaults (includes updating defaults, tasks):
+#   * Use configuration docs to add new variables.
+#   * Use defaults/ to remove any changed/deprecated variables.
+# * Update tests for any changes.
+# * Standard role validation testing (yamllint, ansible-lint, todo, noqa).
+# * Tag with MAJOR.MINOR version, with PATCH representing role change.
+#
+# Reference:
+# * https://docs.paperless-ngx.com/setup/#bare_metal
+# * https://github.com/paperless-ngx/paperless-ngx/blob/dev/Dockerfile
+
+# Last time Paperless-NGS options were validated against default configuration.
+mox_role_validate_date: '2025-09-08'
+mox_role_validate_release: 'trixie'
+mox_role_validate_version: 'v0.0.15'
+
+mox_role_dir: '/opt/mox'
+
+###############################################################################
+# APT Packages
+###############################################################################
+
+mox_role_packages:
+  - 'ca-certificates'
+  - 'golang'
+  - 'rsync'  # ansible.posix.synchronize (config directory).
+
+###############################################################################
+# Default Paperless-NGX  User/Group
+###############################################################################
+
+mox_role_group:
+  name: 'mox'
+  gid: 550
+
+mox_role_user:
+  name: 'mox'
+  group: 'mox'
+  uid: 550
+  shell: '/usr/sbin/nologin'
+  home: '{{ mox_srv_storage_dir }}'
+  comment: 'mox mailserver,,,'
+  create_home: true
+  password: '!'
+  password_lock: true
+  update_password: 'always'
+  expires: -1
+  system: true

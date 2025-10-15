@@ -1,0 +1,60 @@
+---
+# yamllint disable rule:line-length
+###############################################################################
+# Ports Configuration
+###############################################################################
+# Manage firewall with r_pufky.deb.ufw.
+#
+# Reference:
+# * https://github.com/r-pufky/ansible_ufw
+# * https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml
+# yamllint enable rule:line-length
+
+mox_srv_ports:
+  - proto: 'tcp'
+    from_ip: 'any'
+    to_port: 25
+    comment: 'MTA smtp email submission'
+  - proto: 'udp'
+    from_ip: 'any'
+    to_port: 25
+    comment: 'MTA smtp email submission'
+  - proto: 'tcp'
+    from_ip: 'any'
+    to_port: 143
+    comment: 'imapv4'
+  - proto: 'udp'
+    from_ip: 'any'
+    to_port: 143
+    comment: 'imapv4'
+  - proto: 'tcp'
+    from_ip: 'any'
+    to_port: 465
+    comment: 'SSL MUA email submission (legacy)'
+  - proto: 'tcp'
+    from_ip: 'any'
+    to_port: 587
+    comment: 'TLS MUA email submission (RFC 2476)'
+  - proto: 'udp'
+    from_ip: 'any'
+    to_port: 587
+    comment: 'TLS MUA email submission (RFC 2476)'
+  - proto: 'tcp'
+    from_ip: 'any'
+    to_port: 993
+    comment: 'imapv4 over TLS'
+  - proto: 'udp'
+    from_ip: 'any'
+    to_port: 993
+    comment: 'imapv4 over TLS'
+
+# Optional Web server ports for ACME certificate management.
+mox_srv_web_ports:
+  - proto: 'tcp'
+    from_ip: 'any'  # Restrict to trusted networks.
+    to_port: 443
+    comment: 'Web based administration.'
+  - proto: 'tcp'
+    from_ip: 'any'
+    to_port: 80
+    comment: 'ACME TLS certificate provisioning (letsencrypt)'

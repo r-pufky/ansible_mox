@@ -1,0 +1,46 @@
+---
+- name: 'Verify'
+  hosts: 'all'
+  gather_facts: false
+  tasks:
+    - name: 'Verify | /usr/local/bin/mox'
+      ansible.builtin.include_role:
+        name: 'r_pufky.lib.tests'
+        tasks_from: 'file.yml'
+      vars:
+        test_name: 'Verify | /usr/local/bin/mox'
+        test_file: '/usr/local/bin/mox'
+        test_owner: 'root'
+        test_group: 'root'
+        test_mode: '0755'
+        test_state: 'file'
+        test_diff: true
+
+    - name: 'Verify | /data/mox'
+      ansible.builtin.include_role:
+        name: 'r_pufky.lib.tests'
+        tasks_from: 'file.yml'
+      vars:
+        test_name: 'Verify | /data/mox/{{ item }}'
+        test_file: '/data/mox/{{ item }}'
+        test_owner: 'mox'
+        test_group: '{{ omit }}'  # Mox will adjust permissions as needed.
+        test_mode: '{{ omit }}'  # Mox will adjust permissions as needed.
+        test_state: 'directory'
+        test_diff: true
+      loop:
+        - 'data'
+        - 'config'
+
+    - name: 'Verify | /data/mox/web'
+      ansible.builtin.include_role:
+        name: 'r_pufky.lib.tests'
+        tasks_from: 'file.yml'
+      vars:
+        test_name: 'Verify | /data/mox/web'
+        test_file: '/data/mox/web'
+        test_owner: 'mox'
+        test_group: 'mox'
+        test_mode: '0750'
+        test_state: 'directory'
+        test_diff: true
