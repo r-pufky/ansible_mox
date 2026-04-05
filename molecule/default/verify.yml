@@ -2,38 +2,44 @@
 ###############################################################################
 # Verify
 ###############################################################################
-# Decision: Use service user for SUID/SGID perms - SUID/SGID bits cannot be set
-#     by a standard user for 'root' - this will result in errors during role
-#     application. Mox will correct permissions on first run. This will lead
-#     differential in testing between what is set in the role with user data
-#     enabled, and testing resultant permissions.
+# Decision: SUID/SGID bits cannot be set by a standard user for 'root' - this
+#     will result in errors during role application. Mox will correct
+#     permissions on first run. This will lead differential in testing between
+#     what is set in the role with user data enabled, and testing resultant
+#     permissions for mox-config.
 #
-# See config.yml.
+# See install.yml.
 
 - name: 'Verify'
   hosts: 'all'
   gather_facts: false
   tasks:
-    - name: 'Verify | /usr/local/bin/mox'
+    - name: 'Verify | import role variables'
+      ansible.builtin.include_vars:
+        file: '{{
+            lookup("env", "MOLECULE_PROJECT_DIRECTORY") ~ "/vars/main.yml"
+          }}'
+
+    - name: '{{ "Verify | test | " ~ mox___app._bin }}'
       ansible.builtin.include_role:
-        name: 'r_pufky.lib.tests'
+        name: 'r_pufky.data.test'
         tasks_from: 'file.yml'
       vars:
-        test_name: 'Verify | /usr/local/bin/mox'
-        test_file: '/usr/local/bin/mox'
+        test_name: '{{ "Verify | test | " ~ mox___app._bin }}'
+        test_file: '{{ mox___app._bin }}'
         test_owner: 'root'
         test_group: 'root'
         test_mode: '0755'
         test_state: 'file'
         test_diff: true
 
-    - name: 'Verify | /data/mox/web'
+    - name: '{{ "Verify | test | " ~ mox___app._web_d }}'
       ansible.builtin.include_role:
-        name: 'r_pufky.lib.tests'
+        name: 'r_pufky.data.test'
         tasks_from: 'file.yml'
       vars:
-        test_name: 'Verify | /data/mox/web'
-        test_file: '/data/mox/web'
+        test_name: '{{ "Verify | test | " ~ mox___app._web_d }}'
+        test_file: '{{ mox___app._web_d }}'
         test_owner: 'mox'
         test_group: 'mox'
         test_mode: '0750'
@@ -41,41 +47,53 @@
         test_diff: true
 
 - name: 'Verify'
-  hosts: 'mox-debian-13-default'
+  hosts: 'mox-default'
   gather_facts: false
   tasks:
-    - name: 'Verify | /data/mox'
+    - name: 'Verify | import role variables'
+      ansible.builtin.include_vars:
+        file: '{{
+            lookup("env", "MOLECULE_PROJECT_DIRECTORY") ~ "/vars/main.yml"
+          }}'
+
+    - name: '{{ "Verify | test | " ~ mox___app._var_d }}'
       ansible.builtin.include_role:
-        name: 'r_pufky.lib.tests'
+        name: 'r_pufky.data.test'
         tasks_from: 'file.yml'
       vars:
-        test_name: 'Verify | /data/mox/{{ item }}'
-        test_file: '/data/mox/{{ item }}'
+        test_name: '{{ "Verify | test | " ~ item }}'
+        test_file: '{{ item }}'
         test_owner: 'mox'
         test_group: 'root'
-        test_mode: '2750'
-        test_state: 'directory'
-        test_diff: true
-      loop:
-        - 'data'
-        - 'config'
-
-- name: 'Verify'
-  hosts: 'mox-debian-13-no_config'
-  gather_facts: false
-  tasks:
-    - name: 'Verify | /data/mox'
-      ansible.builtin.include_role:
-        name: 'r_pufky.lib.tests'
-        tasks_from: 'file.yml'
-      vars:
-        test_name: 'Verify | /data/mox/{{ item }}'
-        test_file: '/data/mox/{{ item }}'
-        test_owner: 'mox'
-        test_group: 'mox'
         test_mode: '0750'
         test_state: 'directory'
         test_diff: true
       loop:
-        - 'data'
-        - 'config'
+        - '{{ mox___app._data_d }}'
+        - '{{ mox___app._config_d }}'
+
+- name: 'Verify'
+  hosts: 'mox-config'
+  gather_facts: false
+  tasks:
+    - name: 'Verify | import role variables'
+      ansible.builtin.include_vars:
+        file: '{{
+            lookup("env", "MOLECULE_PROJECT_DIRECTORY") ~ "/vars/main.yml"
+          }}'
+
+    - name: '{{ "Verify | test | " ~ mox___app._var_d }}'
+      ansible.builtin.include_role:
+        name: 'r_pufky.data.test'
+        tasks_from: 'file.yml'
+      vars:
+        test_name: '{{ "Verify | test | " ~ item }}'
+        test_file: '{{ item }}'
+        test_owner: 'mox'
+        test_group: 'root'
+        test_mode: '02750'
+        test_state: 'directory'
+        test_diff: true
+      loop:
+        - '{{ mox___app._data_d }}'
+        - '{{ mox___app._config_d }}'

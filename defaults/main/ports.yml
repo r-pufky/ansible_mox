@@ -10,7 +10,7 @@
 # * https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml
 # yamllint enable rule:line-length
 
-mox_srv_ports:
+mox_ports:
   - proto: 'tcp'
     from_ip: 'any'
     to_port: 25
@@ -49,7 +49,7 @@ mox_srv_ports:
     comment: 'imapv4 over TLS'
 
 # Optional Web server ports for ACME certificate management.
-mox_srv_web_ports:
+mox_web_ports:
   - proto: 'tcp'
     from_ip: 'any'  # Restrict to trusted networks.
     to_port: 443

@@ -1,11 +1,14 @@
 ---
-- name: 'Annotate'
-  ansible.builtin.import_tasks: 'annotate.yml'
 - name: 'Prep'
   ansible.builtin.import_tasks: 'prep.yml'
+
 - name: 'Install'
+  when: mox_flg_install
   ansible.builtin.import_tasks: 'install.yml'
+
 - name: 'Config'
+  when: mox_flg_config
   ansible.builtin.import_tasks: 'config.yml'
-- name: 'Validate'
-  ansible.builtin.import_tasks: 'validate.yml'
+
+- name: 'Start'
+  ansible.builtin.import_tasks: 'start.yml'

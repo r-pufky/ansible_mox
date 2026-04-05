@@ -2,51 +2,141 @@
 ###############################################################################
 # Install Packages & Services
 ###############################################################################
-# Install packages and compile Mox.
+# Manually download, extract, build, and install packages according to Linux
+# FHS standards:
+#
+# Type    | Perms               | Path
+# --------|---------------------|-------
+# Source  | 0755/0644 root:root | /opt/mox
+# Runtime | 0750/0640 SRV:SRV   | /var/opt/mox
+#
+# Data directory very likely to be network mounted filesystem. Mox service
+# starts as root and drops privileges once network sockets are opened. Mounted
+# filesystems that squash user permissions will result in failure. SUID/SGID is
+# not used to prevent setting it for parent directories. This is resolved when
+# Mox corrects permissions (more permissive) on startup.
+#
+# Permissions correction may be disabled by setting NoFixPermissions=false in
+# mox.conf.
 #
 # Reference:
-# * https://www.xmox.nl/install/
+# * https://www.xmox.nl/install
+# * https://www.xmox.nl/config
+
+- name: 'Install | filesystem | set system directories'
+  ansible.builtin.file:
+    path: '{{ item }}'
+    owner: 'root'
+    group: 'root'
+    mode: '0755'
+    state: 'directory'
+  loop:
+    - '{{ mox___app._src_d }}'  # src_d includes opt_d.
+
+- name: 'Install | filesystem | set service directories'
+  block:
+    - name: 'Install | filesystem | set service directories'
+      ansible.builtin.file:
+        path: '{{ item }}'
+        owner: '{{ mox__srv._user }}'
+        group: 'root'
+        mode: '0750'
+        state: 'directory'
+      loop:
+        - '{{ mox___app._data_d }}'  # _data_d includes _var_d.
+        - '{{ mox___app._config_d }}'
+  rescue:
+    - name: 'Install ⛑ | filesystem | set service directories'
+      ansible.builtin.file:
+        path: '{{ item }}'
+        owner: '{{ mox__srv._user }}'
+        group: 'root'
+        mode: '0750'
+        state: 'directory'
+      loop:
+        - '{{ mox___app._data_d }}'  # _data_d includes _var_d.
+        - '{{ mox___app._config_d }}'
+      become: true
+      become_user: '{{ mox__srv._user }}'
+
+- name: '{{ "Install | filesystem | set " ~ mox___app._web_d }}'
+  block:
+    - name: '{{ "Install | filesystem | set " ~ mox___app._web_d }}'
+      ansible.builtin.file:
+        path: '{{ mox___app._web_d }}'
+        owner: '{{ mox__srv._user }}'
+        group: '{{ mox__srv._group }}'
+        mode: '0750'
+        state: 'directory'
+  rescue:
+    - name: '{{ "Install ⛑ | filesystem | set " ~ mox___app._web_d }}'
+      ansible.builtin.file:
+        path: '{{ mox___app._web_d }}'
+        owner: '{{ mox__srv._user }}'
+        group: '{{ mox__srv._group }}'
+        mode: '0750'
+        state: 'directory'
+      become: true
+      become_user: '{{ mox__srv._user }}'
 
 - name: 'Install | packages'
   ansible.builtin.include_role:
     name: 'r_pufky.deb.apt'
   vars:
     apt_packages:
-      - '{{ mox_role_packages }}'
-    apt_package_update_cache: true
+      - '{{ mox___packages }}'
+    apt_srv_package_update_cache: true
 
-- name: 'Install | query binary'
+###############################################################################
+# Mox
+###############################################################################
+
+- name: 'Install | filesystem | find previous installations'
+  ansible.builtin.find:
+    paths: '{{ mox__cfg._src_d }}'
+    file_type: 'directory'
+    recurse: false
+    excludes:
+      - '{{ mox__cfg._version }}'
+  register: mox__cmd
+
+- name: 'Install | filesystem | remove previous installations'
+  ansible.builtin.file:
+    path: '{{ item.path }}'
+    state: 'absent'
+  loop: '{{ mox__cmd.files }}'
+  loop_control:
+    label: '{{ item.path }}'
+
+- name: 'Install | filesystem | query installed binary'
   ansible.builtin.stat:
-    path: '{{ _mox_srv_storage_dir._bin_src }}'
-  register: _mox_install
+    path: '{{ mox__cfg._app }}'
+  register: mox__cmd
 
-- name: 'Install | build 🗘'
-  when: not _mox_install.stat.exists
+- name: 'Install | build | 🗘 Mox (~1 minute) 🗘'
+  when: not mox__cmd.stat.exists
   ansible.builtin.debug:
-    msg: |
-      ╭───────────────────────────────────────────────────────────────────╮
-      │                                                                   │
-      │      Building Mox from source. This will take a few minutes.      │
-      │                                                                   │
-      ╰───────────────────────────────────────────────────────────────────╯
+    msg: 'Building Mox (~1 minute).'
 
-- name: 'Install | build mox {{ _mox_srv_version.raw }}'
-  when: not _mox_install.stat.exists
+# golang uses it's own proxy for github packages, no token needed.
+- name: '{{ "Install | build | Mox " ~ mox__cfg._version }}'
+  when: not mox__cmd.stat.exists
   ansible.builtin.shell: >-
-    GOBIN='{{ _mox_srv_storage_dir._bin_src | dirname }}'
-    CGO_ENABLED=0
-    go install github.com/mjl-/mox@{{ _mox_srv_version.raw }}
+    go install {{ mox__cfg._url }}
   args:
     executable: '/bin/bash'
     chdir: '/tmp'
-  changed_when: _mox_build.rc == 0
-  register: _mox_build
+  environment:
+    GOBIN: '{{ mox__cfg._app | dirname }}'
+    CGO_ENABLED: '0'
+  changed_when: mox__build.rc == 0
+  register: mox__build
 
 - name: 'Install | link binary'
-  when: not _mox_install.stat.exists
+  when: not mox__cmd.stat.exists
   ansible.builtin.file:
-    path: '{{ _mox_srv_storage_dir._bin }}'
-    src: '{{ _mox_srv_storage_dir._bin_src }}'
+    path: '{{ mox___app._bin }}'
+    src: '{{ mox__cfg._app }}'
     owner: 'root'
     group: 'root'
     mode: '0755'

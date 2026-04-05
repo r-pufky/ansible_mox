@@ -2,14 +2,14 @@
 ###############################################################################
 # Default
 ###############################################################################
-# Default configuration is deployed successfully.
+# Default and configuration set is deployed correctly. Do not valid user
+# source config files, only that role applied them correctly.
 #
 # Tests:
 # * Binary deployed correctly.
-# * Mox service active and running for 'default' instance.
-# * Permissions propagated correctly for user data mounts.
-# * Permissions propagated correctly for root mounts.
-# * Mox service NOT active/running for 'no_config' instance.
+# * Mox service NOT active/running (mox-default).
+# * Mox service active and running (mox-config).
+# * Permissions propagated correctly.
 
 dependency:
   name: 'galaxy'
@@ -25,45 +25,36 @@ provisioner:
       pipelining: false
   inventory:
     host_vars:
-      mox-debian-13-default:
-        mox_srv_import_config: '{{
+      mox-config:
+        mox_flg_config: true
+        mox_cfg_d: '{{
             lookup("env", "MOLECULE_SCENARIO_DIRECTORY") ~ "/files/config"
           }}'
-        mox_srv_user_data_manage_enable: false
 platforms:
-  - name: 'mox-debian-13-default'
+  - name: 'mox-default'
     image: 'ghcr.io/hifis-net/debian-systemd:13'
     systemd: 'always'
     volumes:
       - '/sys/fs/cgroup:/sys/fs/cgroup:ro'
     command: '/lib/systemd/systemd'
     pre_build_image: true
-    published_ports:
-      - '8443:443/tcp'
-  - name: 'mox-debian-13-no_config'
+  - name: 'mox-config'
     image: 'ghcr.io/hifis-net/debian-systemd:13'
     systemd: 'always'
     volumes:
       - '/sys/fs/cgroup:/sys/fs/cgroup:ro'
     command: '/lib/systemd/systemd'
+    published_ports:
+      - '8443:443/tcp'
     pre_build_image: true
 verifier:
   name: 'ansible'
-lint: |
-  set -e
-  yamllint .
-  ansible-lint .
 scenario:
   test_sequence:
-    # - 'dependency'
-    # - 'cleanup'
     - 'destroy'
     - 'syntax'
     - 'create'
     - 'prepare'
     - 'converge'
-    # - 'idempotence'  # Files created, extracted, created, deleted.
-    # - 'side_effect'
     - 'verify'
-    # - 'cleanup'
     - 'destroy'

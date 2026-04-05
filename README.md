@@ -1,102 +1,123 @@
-# Mox
-Mox Mail Server.
+# [Mox][h]
+Mox Mail Server from Source.
 
-## Requirements
-[supported platforms](https://github.com/r-pufky/ansible_mox/blob/main/meta/main.yml)
+## [Requirements][i]
+Requires [r_pufky.srv][g] galaxy-ng collection. See
+[additional documentation][m] and [reference documentation][h] for
+troubleshooting and config variables.
 
-Requires:
-* **~512MB** RAM
-* **~15%** metadata + email storage disk.
+* RAM: ~512MB
+* Install size: ~170MB
+* Data: ~15% metadata email overhead + email storage disk.
 
 An understanding of how e-mail services work:
 * https://explained-from-first-principles.com/email/
 * https://nich.dk/posts/hosting-my-own-mox-mail-server/
 * https://community.hetzner.com/tutorials/install-and-configure-mailserver-mox-on-debian
 
+> Tasks [potentially touching Network Mounted Filesystems][o] will be run as
+> the task user and fallback to the service user. Manage these locations
+> externally if these fail (mox_flg_config=false and manually configure).
+>
+> Mounted filesystems that squash root permissions will fail (Mox executes
+> certain file tasks as root and drops privileges to service user after opening
+> network sockets; certain files use mox:root permissions).
+
 ## Role Variables
-[defaults](https://github.com/r-pufky/ansible_mox/tree/main/defaults/main)
+Detailed variable use documented in defaults. See usage for role operation.
 
-### Ports
-All ports and protocols have been defined for the role.
+* [defaults][j] - User configurable options.
 
-[defaults/ports.yml](https://github.com/r-pufky/ansible_mox/blob/main/defaults/main/ports.yml)
+* [ports][k] - Ports are **not** managed (defined for external use).
 
-## Dependencies
-**galaxy-ng** roles cannot be used independently. Part of
-[r_pufky.srv](https://github.com/r-pufky/ansible_collection_srv) collection.
+## Usage
+Mox automatically manages file and directory permissions during startup. This
+behavior can be disabled in Mox after initial configuration:
 
-## Example Playbook
-Read defaults documentation.
-
-### Pre-configured deployment
-Service will automatically be restarted when configuration is defined.
-
+mox.conf
 ``` yaml
-- name: 'Mox server'
-  hosts: 'mail.example.com'
-  become: true
-  roles:
-     - 'r_pufky.srv.mox'
-  vars:
-    mox_srv_import_config: 'host_vars/mail.example.com/data/config'
+# Disable automatic perimission fix on startup.
+NoFixPermissions: false
 ```
 
-### New deployment
-Deploy Mox requiring manual server configuration. Service will be installed but
-not started as additional Mox configuration is **required**.
+ Path                | Usage
+ --------------------|-------
+ /var/opt/mox        | Mox working directory, read/write area for service.
+ /var/opt/mox/config | Mox configuration data.
+ /var/opt/mox/data   | Mox runtime data (e.g. email).
+ /var/opt/mox/web    | Mox static web (WebUI, ACME challenges).
+
+### Feature Flags
+Tasks are gated by feature flags and executed in the following order.
+
+  Step | Flag            | Notes
+ ------|-----------------|-------
+  1    | mox_flg_fatal   | Halt execution if request version does not match role tested version.
+  2    | mox_flg_install | Install required packages, users, etc.
+  3    | mox_flg_config  | Install user-defined config.
+
+### Example Playbooks
+
+#### New Deployment
+New Mox deployments require stepping through manual setup to correct configure
+required certificates, etc. This will deploy a new Mox installation ready for
+manual configuration.
+
 ``` yaml
-- name: 'Mox server'
-  hosts: 'mail.example.com'
-  become: true
-  roles:
-     - 'r_pufky.srv.mox'
+- name: 'Deploy Mox. Service not started, Manual configuration required.'
+  ansible.builtin.include_role:
+    name: 'r_pufky.srv.mox'
 ```
 
 Manually walk through mail configuration steps:
 ``` bash
 ssh mail.example.com
 su - mox -s /bin/bash
-cd /data/mox
+cd /var/opt/mox
 mox --help
+mox quickstart user@example.com
+# Copy completed config to ansible controller for Pre-configured deployments.
 ...
 systemctl start mox
 ```
-Copy configuration to ansible controller.
+
+#### Pre-configured deployment
+Most existing Mox deployments will use this. Service automatically restarted
+when configuration is defined.
+
+``` yaml
+- name: 'Deploy Mox server with static configuration.'
+  ansible.builtin.include_role:
+    name: 'r_pufky.srv.mox'
+  vars:
+    mox_flg_config: true
+    mox_cfg_d: 'host_vars/mail.example.com/config'
+```
 
 ## Management
-Manage interactively via the binary.
+Mox is designed to be managed interactively via the Binary.
 
 ``` bash
 ssh mail.example.com
 su - mox -s /bin/bash
-cd /data/mox
+cd /var/opt/mox
 mox --help
 ```
 
 ## Development
-Configure [environment](https://r-pufky.github.io/ansible_collection_docs/ansible/environment)
+Configure [environment][a].
 
-Run all unit tests:
 ``` bash
+# Run all tests.
 molecule test --all
 ```
 
-### Releases
-Release format: **{OS}-{SERVICE}-{ROLE}**
+### [Releases][b]
 
-Each type inherits the versioning system used; defaulting to schematic
-versioning.
-
-`12.0.0-2.0.3-1.0.0`
-
-* 12.0.0 - Debian 12 (bookworm).
-* 2.0.3 - Service/app version.
-* 1.0.0 - Role version.
-
-Releases are branched on Debian releases:
-
-* **[13.x.x](https://github.com/r-pufky/ansible_mox)**: 13 Trixie.
-* **[12.x.x](https://github.com/r-pufky/ansible_mox/tree/12.x)**: 12 Bookworm.
+  Release | Debian | Ansible | Mox     | Notes
+ ---------|--------|---------|---------|-------
+  2.x.x   | 13     | 2.20    | v0.0.15 | Ansible 2.20, feature flags, and semantic versioning.
+  1.x.x   | 13     | 2.18    | v0.0.15 | Initial release.
 
 ## Issues
 Create a bug and provide as much information as possible.
@@ -104,9 +125,23 @@ Create a bug and provide as much information as possible.
 Associate pull requests with a submitted bug.
 
 ## License
-[AGPL-3.0 License](https://www.tldrlegal.com/license/gnu-affero-general-public-license-v3-agpl-3-0)
- [(direct link)](https://github.com/r-pufky/ansible_mox/blob/main/LICENSE)
+[AGPL-3.0 License][c] | [direct link][f]
 
 ## Author Information
-PGP Fingerprint: [466EEC2B67516C7117C85CE3A0BC35D16698BAB9](https://keys.openpgp.org/vks/v1/by-fingerprint/466EEC2B67516C7117C85CE3A0BC35D16698BAB9)
-| [github gist](https://gist.github.com/r-pufky/a8df36977c55b5bb20829267c4c49d22)
+PGP: [466EEC2B67516C7117C85CE3A0BC35D16698BAB9][d] | [github gist][e]
+
+
+[a]: https://r-pufky.github.io/ansible_docs
+[b]: https://semver.org/spec/v2.0.0
+[c]: https://www.tldrlegal.com/license/gnu-affero-general-public-license-v3-agpl-3-0
+[d]: https://keys.openpgp.org/vks/v1/by-fingerprint/466EEC2B67516C7117C85CE3A0BC35D16698BAB9
+[e]: https://gist.github.com/r-pufky/a8df36977c55b5bb20829267c4c49d22
+
+[f]: https://github.com/r-pufky/ansible_mox/blob/main/LICENSE
+[g]: https://github.com/r-pufky/ansible_collection_srv
+[h]: https://www.xmox.nl/config
+[i]: https://github.com/r-pufky/ansible_mox/blob/main/meta/main.yml
+[j]: https://github.com/r-pufky/ansible_mox/tree/main/defaults/main/main.yml
+[k]: https://github.com/r-pufky/ansible_mox/blob/main/defaults/main/ports.yml
+[m]: https://r-pufky.github.io/docs/service/mail/
+[o]: https://r-pufky.github.io/ansible_docs/best_practice/patterns/#network-mounts

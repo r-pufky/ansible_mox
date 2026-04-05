@@ -1,8 +1,9 @@
 ---
 ###############################################################################
-# Prep
+#  Pre Execution Tasks
 ###############################################################################
-# Create user if needed and determine UID/GID for potential remote filesystems.
+# Only use data annotations in role after merging role, defaults, runtime data.
+# Service may not exist if first install.
 #
 # Special Case:
 # * mox.conf (static) changes MUST restart mox service to apply changes.
@@ -12,58 +13,102 @@
 # Reference:
 # * https://www.xmox.nl/config/
 
-- name: 'Prep | fatal version mis-match'
-  when: >
-    _mox_srv_version_fatal_enable.raw and
-    _mox_srv_version.raw != mox_role_validate_version
+- name: 'Prep | fail | ✘ FATAL VERSION MISMATCH ✘'
+  when: mox_flg_fatal and mox_srv_version != mox___release._app
   ansible.builtin.fail:
     msg: |
-      ╭───────────────────────────────────────────────────────────────────╮
-      │                                                                   │
-      │                     Fatal version mis-match.                      │
-      │                                                                   │
-      ├───────────────────────────────────────────────────────────────────╯
-      │ Mox version changes typically require manual migration steps listed
-      │ in release notes.
-      │
-      │ Reference:
-      │ * https://github.com/mjl-/mox/releases/tag/{{ _mox_srv_version.raw }}
-      │
-      │ mox_srv_version: {{ _mox_srv_version.raw }}
-      │ Supported version: {{ mox_role_validate_version }}
-      │ mox_srv_version_fatal_enable: {{ _mox_srv_version_fatal_enable.raw }}
 
-- name: 'Prep | manage users'
-  when: _mox_srv_create_user.raw
-  ansible.builtin.include_role:
-    name: 'r_pufky.deb.users'
-    tasks_from: 'role_account_add.yml'
-  vars:
-    users_role_user: '{{ mox_role_user }}'
-    users_role_group: '{{ mox_role_group }}'
+      ✘ Fatal version mis-match.
 
-- name: 'Prep | enumerate system user {{ _mox_srv_user.raw }}'
+      Mox version changes typically require manual migration steps listed in
+      release notes.
+
+      Reference:
+      * https://github.com/mjl-/mox/releases/tag/{{ mox_srv_version }}
+
+      mox_srv_version: {{ mox_srv_version }}
+      Supported version: {{ mox___release._app }}
+
+      Disable this check by setting mox_flg_fatal=false. May cause data loss.
+
+- name: 'Prep | fact | record start time'
+  ansible.builtin.set_fact:
+    mox__srv: "{{ mox___release | r_pufky.data.v3(
+
+        _start=now(utc=True, fmt='%Y-%m-%dT%H%M%S'),
+        _user=mox_srv_user,
+        _group=mox_srv_group,
+      ) }}"
+    mox__cfg: "{{ mox___app | r_pufky.data.v3(
+
+        _version=mox_srv_version,
+        _app=mox___app._src_d ~ '/' ~ mox_srv_version ~ '/mox',
+        _url=mox___app._url_base ~ mox_srv_version,
+
+        _d=mox_cfg_d | regex_replace('\\/$', ''),
+      ) }}"
+
+- name: 'Prep | assert | config enabled and source defined'
+  when: mox_flg_config
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - mox__cfg._d | length > 0
+    fail_msg: |
+
+      ✘ Config source not set.
+      Config source enabled but no config source defined.
+
+      mox_flg_config: {{ mox_flg_config }}
+      mox_cfg_d: {{ mox__cfg._d }}
+
+- name: '{{ "Prep | account | query user " ~ mox__srv._user }}'
+  ansible.builtin.command: '{{ "id " ~ mox__srv._user }}'
+  failed_when: false
+  register: mox__cfg_check
+  changed_when: mox__cfg_check.rc > 0
+
+- name: '{{ "Prep | account | query group " ~ mox__srv._group }}'
+  ansible.builtin.command: '{{ "groups " ~ mox__srv._group }}'
+  failed_when: false
+  register: mox__group_check
+  changed_when: mox__group_check.rc > 0
+
+- name: '{{ "Prep | account | create group " ~ mox__srv._group }}'
+  when: mox__group_check.rc != 0
+  ansible.builtin.group:
+    gid: '{{ mox___group.gid }}'
+    name: '{{ mox___group.name }}'
+    state: 'present'
+
+- name: '{{ "Prep | account | create user " ~ mox__srv._user }}'
+  when: mox__cfg_check.rc != 0
   ansible.builtin.user:
-    name: '{{ _mox_srv_user.raw }}'
+    name: '{{ mox___user.name }}'
+    group: '{{ mox___user.group }}'
+    uid: '{{ mox___user.uid }}'
+    shell: '{{ mox___user.shell }}'
+    home: '{{ mox___user.home }}'
+    create_home: '{{ mox___user.create_home }}'
+    password: '{{ mox___user.password }}'
+    password_lock: '{{ mox___user.password_lock }}'
+    update_password: '{{ mox___user.update_password }}'
+    expires: '{{ mox___user.expires }}'
+    system: '{{ mox___user.system }}'
+
+# Pre-existing users may have a different UID/GID/Home.
+- name: '{{ "Prep | account | enumerate " ~ mox__srv._user }}'
+  ansible.builtin.user:
+    name: '{{ mox__srv._user }}'
   check_mode: true
   changed_when: false
-  register: _mox_srv_user_query
+  register: mox__cfg_query
 
-- name: 'Prep | parse system user UID/GID'
+- name: 'Prep | fact | parse service UID/GID'
   ansible.builtin.set_fact:
-    _mox_srv_user: '{{
-        _mox_srv_user |
-        combine({"_uid": _mox_srv_user_query.uid})
-      }}'
-    _mox_srv_group: '{{
-        _mox_srv_group |
-        combine({"_gid": _mox_srv_user_query.group})
-      }}'
+    mox__cfg: "{{ mox__cfg | r_pufky.data.v3(
 
-- name: 'Prep | manage bin directory'
-  ansible.builtin.file:
-    path: '{{ _mox_srv_storage_dir._bin_src | dirname }}'
-    owner: 'root'
-    group: 'root'
-    mode: '0755'
-    state: 'directory'
+        _uid=mox__cfg_query.uid,
+        _gid=mox__cfg_query.group,
+        _home=mox__cfg_query.home,
+      ) }}"

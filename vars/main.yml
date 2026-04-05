@@ -5,52 +5,67 @@
 # Default required packages for Mox install.
 #
 # Updates:
-# * New MAJOR, MINOR releases should hard branch at version before starting
-#   (e.g. 2.14.x branch).
-# * Keep a separate change log as changes are made, you will not remember all
-#   of them.
+# * KEEP a separate change log as changes are made.
 # * Use bare-metal docs to validate package/process changes.
-# * Update role defaults (includes updating defaults, tasks):
-#   * Use configuration docs to add new variables.
-#   * Use defaults/ to remove any changed/deprecated variables.
+# * Update defaults.
 # * Update tests for any changes.
-# * Standard role validation testing (yamllint, ansible-lint, to-do, no-qa).
-# * Tag with OS-APP-ROLE version.
+# * Standard validation testing (yamllint, ansible-lint, to-do, no-qa).
 #
 # Reference:
 # * https://www.xmox.nl
 # * github.com/mjl-/mox
 
-# Last time Mox options were validated against default configuration.
-mox_role_validate_date: '2025-09-08'
-mox_role_validate_release: 'trixie'
-mox_role_validate_version: 'v0.0.15'
+mox___release: "{{ {} | r_pufky.data.v3(
 
-mox_role_dir: '/opt/mox'
+    _date='2026-04-04',
+    _debian='trixie',
+    _app='v0.0.15',
+  ) }}"
 
 ###############################################################################
 # APT Packages
 ###############################################################################
 
-mox_role_packages:
+mox___packages:
   - 'ca-certificates'
   - 'golang'
-  - 'rsync'  # ansible.posix.synchronize (config directory).
+
+###############################################################################
+# Mox
+###############################################################################
+# Mox is built and installed via golang.
+
+mox___app: "{{ {} | r_pufky.data.v3(
+
+    _version=mox___release._app,
+    _bin='/usr/local/bin/mox',
+    _service='/etc/systemd/system/mox.service',
+    _opt_d='/opt/mox',
+
+    _src_d='/opt/mox/src',
+    _app='/opt/mox/src/' ~ mox___release._app ~ '/mox',
+
+    _var_d='/var/opt/mox',
+    _data_d='/var/opt/mox/data',
+    _config_d='/var/opt/mox/config',
+    _web_d='/var/opt/mox/web',
+    _url_base='github.com/mjl-/mox@',
+  ) }}"
 
 ###############################################################################
 # Default Mox User/Group
 ###############################################################################
 
-mox_role_group:
+mox___group:
   name: 'mox'
   gid: 550
 
-mox_role_user:
+mox___user:
   name: 'mox'
   group: 'mox'
   uid: 550
   shell: '/usr/sbin/nologin'
-  home: '{{ mox_srv_storage_dir }}'
+  home: '/var/opt/mox'
   comment: 'mox mailserver,,,'
   create_home: true
   password: '!'
