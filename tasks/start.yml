@@ -5,10 +5,10 @@
 # Deploy mox service here to cover install/config only flags. Start Mox
 # services if configuration deployed and confirm active and running.
 
-- name: '{{ "Start | filesystem | set " ~ mox__cfg._service }}'
+- name: '{{ "Start | filesystem | set " ~ mox___app._service }}'
   ansible.builtin.template:
     src: 'systemd/mox.service.j2'
-    dest: '{{ mox__cfg._service }}'
+    dest: '{{ mox___app._service }}'
     owner: 'root'
     group: 'root'
     mode: '0644'
@@ -50,7 +50,7 @@
 
       Configure:
         su - {{ mox__srv._user }} -s /bin/bash
-        cd {{ mox__cfg._var_d }}
+        cd {{ mox___app._var_d }}
         mox --help
         mox quickstart user@example.com
 

@@ -93,7 +93,7 @@
 
 - name: 'Install | filesystem | find previous installations'
   ansible.builtin.find:
-    paths: '{{ mox__cfg._src_d }}'
+    paths: '{{ mox___app._src_d }}'
     file_type: 'directory'
     recurse: false
     excludes:
