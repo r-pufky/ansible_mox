@@ -11,9 +11,10 @@ troubleshooting and config variables.
 * Data: ~15% metadata email overhead + email storage disk.
 
 An understanding of how e-mail services work:
-* https://explained-from-first-principles.com/email/
-* https://nich.dk/posts/hosting-my-own-mox-mail-server/
-* https://community.hetzner.com/tutorials/install-and-configure-mailserver-mox-on-debian
+
+* [E-mail explained from first principles][p]
+* [Hosting Mox mail server][q]
+* [Configuring Mox mail server on Debian][r]
 
 > Tasks [potentially touching Network Mounted Filesystems][o] will be run as
 > the task user and fallback to the service user. Manage these locations
@@ -145,3 +146,6 @@ PGP: [466EEC2B67516C7117C85CE3A0BC35D16698BAB9][d] | [github gist][e]
 [k]: https://github.com/r-pufky/ansible_mox/blob/main/defaults/main/ports.yml
 [m]: https://r-pufky.github.io/docs/service/mail/
 [o]: https://r-pufky.github.io/ansible_docs/best_practice/patterns/#network-mounts
+[p]: https://explained-from-first-principles.com/email
+[q]: https://nich.dk/posts/hosting-my-own-mox-mail-server
+[r]: https://community.hetzner.com/tutorials/install-and-configure-mailserver-mox-on-debian
