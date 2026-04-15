@@ -6,6 +6,7 @@
 # query to guarantee a list result.
 
 - name: '{{ "Config | filesystem | set " ~ mox___app._config_d }}'
+  when: mox__cfg._d | length > 0
   block:
     - name: 'Config | filetree | set managed directories'
       ansible.builtin.file:
@@ -53,3 +54,18 @@
           map(attribute='path') |
           map('regex_replace', '^', mox___app._config_d ~ "/") | list
         )
+
+- name: '{{ "Config | filesystem | query " ~ mox___app._config_d }}'
+  when: mox__cfg._d | length == 0
+  ansible.builtin.find:
+    paths: "{{ mox___app._config_d }}"
+    recurse: false  # Don't need to enumerate sub-directories to remove.
+    hidden: true
+  register: mox__cmd
+
+- name: '{{ "Config | filesystem | clear " ~ mox___app._config_d }}'
+  when: mox__cfg._d | length == 0
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ mox__cmd.files }}"

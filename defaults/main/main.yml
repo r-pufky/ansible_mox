@@ -83,13 +83,18 @@ mox_srv_group: 'mox'
 
 # Mox configuration to set.
 #
-# Ansible controller path to source configuration files (treated as a jinja2
-# templates allowing for ansible variable interpretation). Overwrites existing
-# config data in /var/opt/mox/config/*. Files not sourced will be removed.
+# Ansible controller path to source directory (treated as a jinja2 templates
+# allowing for ansible variable use).
 #
-# A configuration must be set if mox_flg_config=true. Otherwise the service
-# will be installed but not configured (which allows for manual step-by-step
-# Mox setup).
+# Sets /var/opt/mox/config/*. Files not sourced will be removed. Setting no
+# configuration allows for manual step-by-step Mox setup.
+#
+# maria_flg_config=true:
+# ⋮maria_srv_conf_d='' - Remove existing files.
+# ⋮maria_srv_conf_d='{DIR}' - Replace existing files with sourced template
+# ⋮    dir.
+# maria_flg_config=false:
+# ⋮maria_srv_conf_d=* - Take no action.
 #
 # Special Case:
 # * Permissions automatically set to 0750:0640 mox:mox.

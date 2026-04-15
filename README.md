@@ -131,7 +131,6 @@ Associate pull requests with a submitted bug.
 ## Author Information
 PGP: [466EEC2B67516C7117C85CE3A0BC35D16698BAB9][d] | [github gist][e]
 
-
 [a]: https://r-pufky.github.io/ansible_docs
 [b]: https://semver.org/spec/v2.0.0
 [c]: https://www.tldrlegal.com/license/gnu-affero-general-public-license-v3-agpl-3-0
@@ -144,7 +143,7 @@ PGP: [466EEC2B67516C7117C85CE3A0BC35D16698BAB9][d] | [github gist][e]
 [i]: https://github.com/r-pufky/ansible_mox/blob/main/meta/main.yml
 [j]: https://github.com/r-pufky/ansible_mox/tree/main/defaults/main/main.yml
 [k]: https://github.com/r-pufky/ansible_mox/blob/main/defaults/main/ports.yml
-[m]: https://r-pufky.github.io/docs/service/mail/
+[m]: https://r-pufky.github.io/docs/mail/mox
 [o]: https://r-pufky.github.io/ansible_docs/best_practice/patterns/#network-mounts
 [p]: https://explained-from-first-principles.com/email
 [q]: https://nich.dk/posts/hosting-my-own-mox-mail-server

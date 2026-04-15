@@ -39,7 +39,7 @@
         _user=mox_srv_user,
         _group=mox_srv_group,
       ) }}"
-    mox__cfg: "{{ mox___app | r_pufky.data.v3(
+    mox__cfg: "{{ {} | r_pufky.data.v3(
 
         _version=mox_srv_version,
         _app=mox___app._src_d ~ '/' ~ mox_srv_version ~ '/mox',
